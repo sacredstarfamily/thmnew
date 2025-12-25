@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cookies } from 'next/headers'
 import { AuthService } from '@/lib/auth'
-
+import PayButton from "@/components/PayButton";
 async function getCurrentUser() {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')?.value
@@ -22,9 +22,9 @@ export default async function Home() {
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="flex min-h-screen w-full max-w-4xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
         <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
+          
+          src="/wordlogo.png"
+          alt="themiracle word logo"
           width={100}
           height={20}
           priority
@@ -40,7 +40,7 @@ export default async function Home() {
               : "Get started by creating an account or signing in to access all features of our modern web application."
             }
           </p>
-
+            <PayButton />
           {user && (
             <div className="flex flex-wrap gap-2 mt-4">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
