@@ -25,8 +25,8 @@ export default async function Home() {
           
           src="/wordlogo.png"
           alt="themiracle word logo"
-          width={100}
-          height={20}
+          width={300}
+          height={50}
           priority
         />
 
@@ -93,32 +93,6 @@ export default async function Home() {
           )}
         </div>
 
-        {/* Feature highlights for non-authenticated users */}
-        {!user && (
-          <div className="w-full max-w-4xl mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div className="p-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🔐</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Secure Authentication</h3>
-              <p className="text-gray-600">JWT-based authentication with secure password hashing and session management.</p>
-            </div>
-            <div className="p-6">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">⚡</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Server-Side Rendering</h3>
-              <p className="text-gray-600">Optimized performance with Next.js 16 server components and edge runtime.</p>
-            </div>
-            <div className="p-6">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl">🎨</span>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Modern UI</h3>
-              <p className="text-gray-600">Beautiful, responsive design built with Tailwind CSS and modern React patterns.</p>
-            </div>
-          </div>
-        )}
       </main>
     </div>
   );
