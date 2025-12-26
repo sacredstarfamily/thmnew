@@ -7,21 +7,20 @@ export async function GET() {
     await prisma.$connect()
 
     // Create a test user
-    const user = await prisma.user.create({
+     await prisma.user.create({
       data: {
         email: 'test@example.com',
         name: 'Test User',
         password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj8lZrHnZKy', // hashed "testpassword"
       },
     })
-    const setAdmin = await prisma.user.update({
+     await prisma.user.update({
       where: { email: 'seeloveinfinite@gmail.com'},
       data: { role: 'admin' },
     })
     return NextResponse.json({
       message: 'Database connection successful!',
-      user,
-      setAdmin
+     
     })
   } catch (error) {
     console.error('Database connection error:', error)
