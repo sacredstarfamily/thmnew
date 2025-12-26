@@ -9,6 +9,7 @@ export interface UserPayload {
   id: string
   email: string
   name?: string
+  role?: string
 }
 
 export class AuthService {
@@ -55,6 +56,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        role: true,
         createdAt: true,
       },
     })
@@ -78,6 +80,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
     }
   }
 
@@ -88,6 +91,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        role: true,
         image: true,
         createdAt: true,
         updatedAt: true,
@@ -103,9 +107,14 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        role: true,
         image: true,
         updatedAt: true,
       },
     })
+  }
+
+  static isAdmin(user: { role?: string } | null): boolean {
+    return user?.role === 'admin'
   }
 }
