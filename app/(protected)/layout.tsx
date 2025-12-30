@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { AuthService } from '@/lib/auth'
 import Link from 'next/link'
+import { MobileNav } from '@/components/MobileNav'
+import Image from 'next/image'
 
 async function checkAuth() {
   const cookieStore = await cookies()
@@ -40,12 +42,12 @@ export default async function ProtectedLayout({
             {/* Logo/Brand */}
             <div className="flex items-center">
               <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-                MyApp
+               <Image src="/wordlogo.png" alt="themiracle Logo" width={302} height={62} />
               </Link>
             </div>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex space-x-8">
+            <nav className="hidden md:flex space-x-4">
               <Link
                 href="/dashboard"
                 className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
@@ -64,11 +66,19 @@ export default async function ProtectedLayout({
               >
                 Settings
               </Link>
+              {AuthService.isAdmin(user) && (
+                <Link
+                  href="/admin"
+                  className="text-purple-600 hover:text-purple-900 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
+              <div className="hidden md:flex items-center space-x-3">
                 <div className="shrink-0">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-white">
@@ -76,7 +86,7 @@ export default async function ProtectedLayout({
                     </span>
                   </div>
                 </div>
-                <div className="hidden md:block">
+                <div>
                   <div className="text-sm font-medium text-gray-900">
                     {user.name || user.email.split('@')[0]}
                   </div>
@@ -87,7 +97,7 @@ export default async function ProtectedLayout({
               </div>
 
               {/* Logout Button */}
-              <form action="/api/auth/logout" method="POST" className="inline">
+              <form action="/api/auth/logout" method="POST" className="hidden md:inline">
                 <button
                   type="submit"
                   className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
@@ -95,32 +105,12 @@ export default async function ProtectedLayout({
                   Logout
                 </button>
               </form>
+
+              {/* Mobile Navigation Toggle */}
+              <MobileNav isAdmin={AuthService.isAdmin(user)} />
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          <div className="md:hidden border-t border-gray-200 py-3">
-            <nav className="flex space-x-6">
-              <Link
-                href="/dashboard"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/profile"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Profile
-              </Link>
-              <Link
-                href="/settings"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Settings
-              </Link>
-            </nav>
-          </div>
         </div>
       </header>
 

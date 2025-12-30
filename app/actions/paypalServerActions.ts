@@ -78,3 +78,28 @@ export async function updatePayPalProduct(productId: string, updates: {
         };
     }
 }
+
+export async function createPayPalProduct(productData: {
+    name: string;
+    description: string;
+    imageUrl: string;
+    type: string;
+    category: string;
+    homeUrl: string;
+}) {
+    try {
+        const paypal = new PayPalInterface();
+        const result = await paypal.createItem(
+            productData.name,
+            productData.description,
+            0, // price is not used by PayPal catalog API
+            productData.imageUrl,
+            productData.type,
+            productData.category,
+            productData.homeUrl
+        );
+        return result;
+    } catch (error) {
+        throw error instanceof Error ? error : new Error("Failed to create PayPal product");
+    }
+}

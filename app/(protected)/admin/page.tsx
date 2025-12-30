@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { AuthService } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { UsersTable } from '@/components/UsersTable'
+import { AdminPayPalSection } from '@/components/AdminPayPalSection'
+import { PayPalInterface, PayPalProduct } from '@/app/actions/paypalActions'
 
 async function getCurrentUser() {
   const cookieStore = await cookies()
@@ -32,6 +34,11 @@ async function getAllUsers() {
   })
 }
 
+async function getPayPalCatalog() {
+  const paypal = new PayPalInterface()
+  return paypal.getItems()
+}
+
 export default async function AdminPage() {
   const user = await getCurrentUser()
 
@@ -46,6 +53,14 @@ export default async function AdminPage() {
   }
 
   const allUsers = await getAllUsers()
+  let paypalCatalog: { products: PayPalProduct[]; total_items: number } | null = null
+  let paypalError: string | null = null
+
+  try {
+    paypalCatalog = await getPayPalCatalog()
+  } catch (error) {
+    paypalError = error instanceof Error ? error.message : 'Failed to load PayPal catalog'
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -63,6 +78,8 @@ export default async function AdminPage() {
         
         <UsersTable initialUsers={allUsers} />
       </div>
+
+      <AdminPayPalSection paypalCatalog={paypalCatalog} paypalError={paypalError} />
 
       <div className="mt-8 grid gap-6 md:grid-cols-3">
         <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-sm border border-zinc-200 dark:border-zinc-800 p-6">

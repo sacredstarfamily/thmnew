@@ -33,3 +33,16 @@ model Session {
 
   @@map("sessions")
 }
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  price           Decimal  @db.Decimal(10, 2)
+  imageUrl        String?
+  paypalProductId String?  @unique
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("products")
+}
