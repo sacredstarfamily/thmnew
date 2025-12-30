@@ -65,7 +65,7 @@ export interface PayPalProduct {
     name: string;
     description?: string;
     type?: string;
-    category?: string;
+    category?: 'DIGITAL_GOODS' | 'PHYSICAL_GOODS' | string;
     image_url?: string;
     home_url?: string;
     [key: string]: unknown;

@@ -6,7 +6,7 @@ type PayPalCatalogProduct = PayPalProduct & {
   create_time?: string | number | Date
   description?: string
   type?: string
-  category?: string
+  category?: 'DIGITAL_GOODS' | 'PHYSICAL_GOODS'
   price?: number
 }
 
@@ -15,7 +15,7 @@ type PayPalCatalog = { products: PayPalCatalogProduct[]; total_items: number }
 async function getCatalog(): Promise<PayPalCatalog | null> {
   const paypal = new PayPalInterface()
   try {
-    return await paypal.getItems()
+    return await paypal.getItems() as PayPalCatalog
   } catch (error) {
     console.error('Failed to load PayPal catalog for shop:', error)
     return null

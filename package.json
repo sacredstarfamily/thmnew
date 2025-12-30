@@ -15,6 +15,7 @@
     "migrate:deploy": "npx prisma migrate deploy",
     "migrate:status": "npx prisma migrate status",
     "migrate:reset": "npx prisma migrate reset",
+    "migrate:baseline": "npx prisma migrate resolve --applied",
     "generate": "npx prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "npx prisma studio",
