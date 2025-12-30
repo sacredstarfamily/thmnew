@@ -12,8 +12,13 @@
     "pull-db": "npx prisma db pull",
     "push-db": "npx prisma db push --force-reset",
     "migrate-db": "npx prisma migrate dev",
+    "migrate:deploy": "npx prisma migrate deploy",
+    "migrate:status": "npx prisma migrate status",
+    "migrate:reset": "npx prisma migrate reset",
     "generate": "npx prisma generate",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "npx prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@paypal/paypal-server-sdk": "^2.1.0",
