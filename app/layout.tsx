@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
+import {GoogleAnalytics} from '@next/third-parties/google';
 
 import "./globals.css";
 import PayPalProvider from "./context/paypal-provider";
@@ -26,29 +26,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        {/* Google Analytics */}
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=GT-NBXFK8QV"
-          strategy="afterInteractive"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){window.dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'GT-NBXFK8QV');
-            `,
-          }}
-        />
-      </head>
+      
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning={true}
       >
+        <GoogleAnalytics gaId="GT-NBXFK8QV" />
         <PayPalProvider>
           {children}
         </PayPalProvider>
