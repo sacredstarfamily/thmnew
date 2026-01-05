@@ -6,6 +6,9 @@ import { UsersTable } from '@/components/UsersTable'
 import { AdminPayPalSection } from '@/components/AdminPayPalSection'
 import { PayPalInterface, PayPalProduct } from '@/app/actions/paypalActions'
 
+// NOTE: DeprecationWarning originates inside PayPalInterface (uses url.parse).
+// Update that module to use the WHATWG URL API (new URL(...)) to clear the warning.
+
 async function getCurrentUser() {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')?.value

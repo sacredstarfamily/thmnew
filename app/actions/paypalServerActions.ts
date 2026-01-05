@@ -1,6 +1,7 @@
 "use server";
 
 import { PayPalInterface, PayPalOrderRequest } from "./paypalActions";
+import { prisma } from "@/lib/prisma";
 
 export async function createPayPalOrder(orderData: PayPalOrderRequest) {
     try {
@@ -58,23 +59,46 @@ export async function deletePayPalProduct(productId: string) {
     }
 }
 
-export async function updatePayPalProduct(productId: string, updates: {
-    name?: string;
-    description?: string;
-    type?: string;
-    category?: string;
-    image_url?: string;
-    home_url?: string;
+export async function updatePayPalProduct(update: {
+    id: string;
+    name: string;
+    price: number;
+    quantity?: number;
 }) {
     try {
+        console.log(`🔄 Updating PayPal product: ${update.name}`);
         const paypal = new PayPalInterface();
-        const result = await paypal.updateProduct(productId, updates);
-        return { success: true, data: result };
+        
+        await paypal.updateProduct(update.id, {
+            name: update.name,
+            description: `Price: ${update.price}`
+        });
+
+        // Update or create item in database with price and inventory
+        const dbItem = await prisma.product.upsert({
+            where: { paypalProductId: update.id },
+            update: {
+                name: update.name,
+                price: update.price,
+                quantity: update.quantity ?? 0,
+            },
+            create: {
+                name: update.name,
+                price: update.price,
+                quantity: update.quantity ?? 0,
+                paypalProductId: update.id,
+                imageUrl: '/images.jpeg',
+            }
+        });
+
+        console.log(`✅ PayPal product updated: ${update.id}, price: ${update.price}, quantity: ${update.quantity ?? 0}, database item synced`);
+        const serializedDbItem = { ...dbItem, price: dbItem.price.toNumber() };
+        return { success: true, id: update.id, name: update.name, price: update.price, dbItem: serializedDbItem };
     } catch (error) {
-        console.error("Server: Failed to update PayPal product:", error);
+        console.error("❌ PayPal product update failed:", error);
         return {
             success: false,
-            error: error instanceof Error ? error.message : "Unknown error occurred"
+            error: error instanceof Error ? error.message : "Unknown error",
         };
     }
 }
@@ -101,5 +125,15 @@ export async function createPayPalProduct(productData: {
         return result;
     } catch (error) {
         throw error instanceof Error ? error : new Error("Failed to create PayPal product");
+    }
+}
+
+export async function getProducts() {
+    try {
+        const products = await prisma.product.findMany();
+        return { success: true, data: products.map(p => ({ ...p, price: p.price.toNumber() })) };
+    } catch (error) {
+        console.error("Failed to get products:", error);
+        return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
 }

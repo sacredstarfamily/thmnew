@@ -40,6 +40,32 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
   const showSuccess = params.order === 'success'
   const catalog = await getCatalog()
 
+  if (!catalog) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          <div className="mb-10 text-center">
+            <h1 className="text-4xl font-bold text-gray-900">Shop</h1>
+            <p className="mt-2 text-lg text-gray-600">
+              Browse available products powered by PayPal.
+            </p>
+          </div>
+
+          {showSuccess && <SuccessMessage />}
+
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+            Unable to load products right now. Please try again later.
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const availableItems = (catalog.products ?? []).filter((item: PayPalCatalogProduct) => {
+    const name = item.name ?? "";
+    return !name.trim().toLowerCase().endsWith(" | no inventory");
+  })
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-12">
@@ -52,22 +78,16 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
 
         {showSuccess && <SuccessMessage />}
 
-        {!catalog && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-            Unable to load products right now. Please try again later.
-          </div>
-        )}
-
-        {catalog && catalog.products.length === 0 && (
+        {availableItems.length === 0 && (
           <div className="rounded-lg border border-gray-200 bg-white p-6 text-gray-600 shadow-sm">
             No products are available at the moment.
           </div>
         )}
 
-        {catalog && catalog.products.length > 0 && (
+        {availableItems.length > 0 && (
           <div className="grid gap-6 lg:grid-cols-4">
             <div className="lg:col-span-3">
-              <ShopProducts products={catalog.products} />
+              <ShopProducts products={availableItems} />
             </div>
             <div className="lg:col-span-1">
               <CartSummary />

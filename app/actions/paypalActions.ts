@@ -581,3 +581,6 @@ export class PayPalInterface {
         }
     }
 }
+
+// Removed "use server" and updatePayPalProduct function.
+// Import updatePayPalProduct from ./paypalServerActions instead.
