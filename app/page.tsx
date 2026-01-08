@@ -32,7 +32,7 @@ export default async function Home() {
 
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left max-w-2xl">
           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            {user ? `Welcome back, ${user.name || user.email.split('@')[0]}!` : "Welcome to our app!"}
+            {user ? `Welcome back, ${user.name || user.email.split('@')[0]}!` : "Welcome to themiracle.love!"}
           </h1>
           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
             {user

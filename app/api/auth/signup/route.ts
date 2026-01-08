@@ -1,53 +1,64 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { AuthService } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name } = await request.json()
+    const { email, password, name } = await request.json();
 
-    // Validation
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
-        { status: 400 }
-      )
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
 
-    try {
-      const user = await AuthService.createUser(email, password, name)
-      const token = AuthService.generateToken({
-        id: user.id,
-        email: user.email,
-        name: user.name ?? undefined,
-      })
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-      return NextResponse.json({
-        user,
-        token,
-        message: 'User created successfully',
-      })
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      if (errorMessage === 'User with this email already exists') {
-        return NextResponse.json(
-          { error: 'User with this email already exists' },
-          { status: 409 }
-        )
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        verificationToken,
+      },
+    });
+
+    if (process.env.NODE_ENV === 'production') {
+      // Send POST to external endpoint
+      const externalResponse = await fetch('https://themiracle.love/completeSignup.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: user.email,
+          name: user.name || '',
+          verificationToken: user.verificationToken,
+        }),
+      });
+
+      if (!externalResponse.ok) {
+        console.error('Failed to send to external endpoint');
+        // Optionally, you can delete the user or handle error
       }
-      throw error
+    } else {
+      // In development, console log the verification link
+      console.log(`Verification link: /verify-email?email=${encodeURIComponent(user.email)}&code=${user.verificationToken}`);
     }
+
+    return NextResponse.json({ message: 'User created. Please check your email for verification.' });
   } catch (error) {
-    console.error('Signup error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Signup error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
