@@ -47,9 +47,18 @@ export async function POST(request: NextRequest) {
         }),
       });
 
-      if (!externalResponse.ok) {
+      if (externalResponse.ok) {
+        const responseData = await externalResponse.json();
+        if (responseData.error) {
+          // Delete the user since email failed
+          await prisma.user.delete({ where: { id: user.id } });
+          return NextResponse.json({ error: 'Failed to send verification email. Please try again.' }, { status: 500 });
+        }
+      } else {
         console.error('Failed to send to external endpoint');
-        // Optionally, you can delete the user or handle error
+        // Optionally, delete the user
+        await prisma.user.delete({ where: { id: user.id } });
+        return NextResponse.json({ error: 'Failed to send verification email. Please try again.' }, { status: 500 });
       }
     } else {
       // In development, console log the verification link
