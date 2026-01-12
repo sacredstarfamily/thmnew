@@ -99,7 +99,6 @@ export default async function ProtectedLayout({
               {/* Logout Button */}
               <form action="/api/auth/logout" method="POST" className="hidden md:inline">
                 <button
-                  
                   className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
                 >
                   Logout
