@@ -28,7 +28,7 @@ if(
        <p>Hi $userName,</p>
        <p>Thank you for signing up with us.</p>
        <p>verify your email address by clicking on the link below</p>
-       <a href='https://themiracle.love/verify/$verificationCode'>Verify Email</a>
+       <a href='https://themiracle.love/verify-email?email=$email&code=$verificationCode'>Verify Email</a>
        </body>
        </html>";
        $headers = "MIME-Version: 1.0" . "\r\n";

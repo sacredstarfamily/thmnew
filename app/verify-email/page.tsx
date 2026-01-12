@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,6 +13,43 @@ function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams.get('email') || '';
+  const codeFromParams = searchParams.get('code') || '';
+
+  const handleAutoVerify = useCallback(async (verificationCode: string) => {
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, verificationToken: verificationCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccess('Email verified successfully! You can now log in.');
+        setTimeout(() => router.push('/login'), 2000);
+      } else {
+        setError(data.error || 'Verification failed');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email, router]);
+
+  useEffect(() => {
+    if (codeFromParams) {
+      setCode(codeFromParams);
+      handleAutoVerify(codeFromParams);
+    }
+  }, [codeFromParams, handleAutoVerify]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
