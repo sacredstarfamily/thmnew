@@ -45,11 +45,13 @@ function VerifyEmailForm() {
   }, [email, router]);
 
   useEffect(() => {
-    if (codeFromParams) {
+    if (codeFromParams && email) {
       setCode(codeFromParams);
       handleAutoVerify(codeFromParams);
+    } else if (codeFromParams || email) {
+      setError('Invalid verification link. Please check your email for the correct link.');
     }
-  }, [codeFromParams, handleAutoVerify]);
+  }, [codeFromParams, handleAutoVerify, email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
