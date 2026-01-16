@@ -4,6 +4,8 @@ import { AuthService } from '@/lib/auth'
 import Link from 'next/link'
 import { MobileNav } from '@/components/MobileNav'
 import Image from 'next/image'
+import { WalletProvider } from '@/context/WalletProvider'
+import { WalletButton } from '@/components/WalletButton'
 
 async function checkAuth() {
   const cookieStore = await cookies()
@@ -34,87 +36,94 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo/Brand */}
-            <div className="flex items-center">
-              <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-               <Image src="/wordlogo.png" alt="themiracle Logo" width={302} height={62} />
-              </Link>
-            </div>
-
-            {/* Navigation Links */}
-            <nav className="hidden md:flex space-x-4">
-              <Link
-                href="/dashboard"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/profile"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Profile
-              </Link>
-              <Link
-                href="/settings"
-                className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
-              >
-                Settings
-              </Link>
-              {AuthService.isAdmin(user) && (
-                <Link
-                  href="/admin"
-                  className="text-purple-600 hover:text-purple-900 px-3 py-2 text-sm font-medium transition-colors"
-                >
-                  Admin
+    <WalletProvider>
+      <div className="min-h-screen bg-gray-50">
+        {/* Navigation Header */}
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              {/* Logo/Brand */}
+              <div className="flex items-center">
+                <Link href="/dashboard" className="text-xl font-bold text-gray-900">
+                 <Image src="/wordlogo.png" alt="themiracle Logo" width={302} height={62} />
                 </Link>
-              )}
-            </nav>
-
-            {/* User Menu */}
-            <div className="flex items-center space-x-4">
-              <div className="hidden md:flex items-center space-x-3">
-                <div className="shrink-0">
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-white">
-                      {(user.name || user.email).charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {user.name || user.email.split('@')[0]}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {user.email}
-                  </div>
-                </div>
               </div>
 
-              {/* Logout Button */}
-              <form action="/api/auth/logout" method="POST" className="hidden md:inline">
-                <button
-                  className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
+              {/* Navigation Links */}
+              <nav className="hidden md:flex space-x-4">
+                <Link
+                  href="/dashboard"
+                  className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
                 >
-                  Logout
-                </button>
-              </form>
+                  Dashboard
+                </Link>
+                <Link
+                  href="/profile"
+                  className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  Profile
+                </Link>
+                <Link
+                  href="/settings"
+                  className="text-gray-500 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-colors"
+                >
+                  Settings
+                </Link>
+                {AuthService.isAdmin(user) && (
+                  <Link
+                    href="/admin"
+                    className="text-purple-600 hover:text-purple-900 px-3 py-2 text-sm font-medium transition-colors"
+                  >
+                    Admin
+                  </Link>
+                )}
+              </nav>
 
-              {/* Mobile Navigation Toggle */}
-              <MobileNav isAdmin={AuthService.isAdmin(user)} />
+              {/* User Menu */}
+              <div className="flex items-center space-x-4">
+                {/* Wallet Connection */}
+                <div className="hidden md:block">
+                  <WalletButton />
+                </div>
+
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="shrink-0">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">
+                        {(user.name || user.email).charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {user.name || user.email.split('@')[0]}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logout Button */}
+                <form action="/api/auth/logout" method="POST" className="hidden md:inline">
+                  <button
+                    className="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors"
+                  >
+                    Logout
+                  </button>
+                </form>
+
+                {/* Mobile Navigation Toggle */}
+                <MobileNav isAdmin={AuthService.isAdmin(user)} />
+              </div>
             </div>
+
           </div>
+        </header>
 
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main>{children}</main>
-    </div>
+        {/* Main Content */}
+        <main>{children}</main>
+      </div>
+    </WalletProvider>
   )
 }

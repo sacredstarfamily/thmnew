@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
 
 interface MobileNavProps {
   isAdmin: boolean
@@ -9,6 +10,8 @@ interface MobileNavProps {
 
 export function MobileNav({ isAdmin }: MobileNavProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const { open } = useAppKit()
+  const { address, isConnected } = useAppKitAccount()
 
   return (
     <>
@@ -69,6 +72,27 @@ export function MobileNav({ isAdmin }: MobileNavProps) {
         }`}
       >
         <nav className="px-4 py-6 space-y-2">
+          <button
+            onClick={() => {
+              open()
+              setIsOpen(false)
+            }}
+            className={`
+              w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors
+              ${isConnected 
+                ? 'bg-green-50 text-green-800 border border-green-200' 
+                : 'bg-blue-50 text-blue-800 border border-blue-200'
+              }`}
+          >
+            {isConnected ? (
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                Wallet: {address?.slice(0, 6)}...{address?.slice(-4)}
+              </span>
+            ) : (
+              'Connect Wallet'
+            )}
+          </button>
           <Link
             href="/dashboard"
             className="text-gray-700 hover:text-gray-900 hover:bg-gray-100 block px-4 py-2 rounded-md text-base font-medium transition-colors"
@@ -101,6 +125,13 @@ export function MobileNav({ isAdmin }: MobileNavProps) {
               </Link>
             </div>
           )}
+          <form action="/api/auth/logout" method="POST">
+            <button
+              className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 rounded-md"
+            >
+              Logout
+            </button>
+          </form>
         </nav>
       </div>
     </>
