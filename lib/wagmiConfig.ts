@@ -1,7 +1,7 @@
 import { createAppKit } from '@reown/appkit/react'
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
 import { SolanaAdapter } from '@reown/appkit-adapter-solana'
-import { mainnet, sepolia } from '@reown/appkit/networks'
+import { mainnet, sepolia, solana } from '@reown/appkit/networks'
 
 export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || ''
 
@@ -14,7 +14,7 @@ export const wagmiAdapter = new WagmiAdapter({
   networks: [mainnet, sepolia],
   ssr: true
 })
-export const solanaAdapter = new SolanaAdapter({})
+export const solanaAdapter = new SolanaAdapter()
 
 const metadata = {
   name: 'themiracle.love',
@@ -28,5 +28,5 @@ export const modal = createAppKit({
   projectId,
   metadata,
   themeMode: 'light',
-  networks: [mainnet, sepolia]
+  networks: [mainnet, sepolia, solana]
 })
