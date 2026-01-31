@@ -1,10 +1,46 @@
 'use client'
 
-import { useAppKit, useAppKitAccount } from '@reown/appkit/react'
+import { useAppKit, useAppKitAccount, useAppKitNetwork } from '@reown/appkit/react'
+import { useEffect, useRef } from 'react'
+import { connectWallet, disconnectWallet } from '@/app/actions/walletActions'
 
-export function WalletConnect() {
+export function WalletConnect({ onWalletUpdate }: { onWalletUpdate?: () => void }) {
   const { open } = useAppKit()
   const { address, isConnected } = useAppKitAccount()
+  const { chainId } = useAppKitNetwork()
+  const onWalletUpdateRef = useRef(onWalletUpdate)
+
+  // Update the ref when onWalletUpdate changes
+  useEffect(() => {
+    onWalletUpdateRef.current = onWalletUpdate
+  }, [onWalletUpdate])
+
+  useEffect(() => {
+    if (isConnected && address) {
+      // Store wallet data in database when connected
+      connectWallet({
+        address,
+        chainId: chainId ? Number(chainId) : undefined,
+      }).then((result) => {
+        if (result.success) {
+          console.log('Wallet connected and stored:', result.wallet)
+          onWalletUpdateRef.current?.()
+        } else {
+          console.error('Failed to store wallet:', result.error)
+        }
+      })
+    } else if (!isConnected && address) {
+      // Update wallet as disconnected when user disconnects
+      disconnectWallet(address).then((result) => {
+        if (result.success) {
+          console.log('Wallet disconnected:', result.wallet)
+          onWalletUpdateRef.current?.()
+        } else {
+          console.error('Failed to update wallet disconnect:', result.error)
+        }
+      })
+    }
+  }, [isConnected, address, chainId])
 
   return (
     <div className="w-full">
@@ -15,6 +51,11 @@ export function WalletConnect() {
             <p className="text-xs text-green-600 mt-1">
               {address?.slice(0, 6)}...{address?.slice(-4)}
             </p>
+            {chainId && (
+              <p className="text-xs text-green-600 mt-1">
+                Chain ID: {chainId}
+              </p>
+            )}
           </div>
           <button
             onClick={() => open()}

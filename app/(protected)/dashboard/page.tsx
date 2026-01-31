@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { AuthService } from '@/lib/auth'
 import Link from 'next/link'
+import { WalletDisplay } from '@/components/WalletDisplay'
 
 async function getCurrentUser() {
   const cookieStore = await cookies()
@@ -108,6 +109,9 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Wallet Display */}
+        <WalletDisplay />
 
         {/* Recent Activity */}
         <div className="bg-white rounded-lg shadow">
