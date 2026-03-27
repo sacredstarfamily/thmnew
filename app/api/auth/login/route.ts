@@ -23,18 +23,36 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: 'Email not verified. Please verify your account before logging in.' },
+        { status: 403 }
+      )
+    }
+
     // Generate JWT token
     const token = AuthService.generateToken({
       id: user.id,
       email: user.email,
       name: user.name ?? undefined,
+      role: user.role,
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user,
       token,
       message: 'Login successful',
     })
+
+    response.cookies.set('auth-token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
+
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(

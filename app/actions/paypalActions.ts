@@ -1,7 +1,3 @@
-import axios from 'axios';
-import qs from 'qs';
-
-
 const Env = process.env.NODE_ENV;
 const LIVE_URL = "https://api.paypal.com";
 const SANDBOX_API = "https://api-m.sandbox.paypal.com"
@@ -71,8 +67,94 @@ export interface PayPalProduct {
     [key: string]: unknown;
 }
 
+type PayPalToken = {
+    expires_in: number;
+    created: number;
+    access_token: string;
+};
+
+class PayPalRequestError extends Error {
+    status?: number;
+    data?: unknown;
+
+    constructor(message: string, options?: { status?: number; data?: unknown }) {
+        super(message);
+        this.name = 'PayPalRequestError';
+        this.status = options?.status;
+        this.data = options?.data;
+    }
+}
+
+function isObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function getErrorDetailMessage(data: unknown): string | undefined {
+    if (!isObject(data)) {
+        return undefined;
+    }
+
+    const message = data.message;
+    if (typeof message === 'string' && message.length > 0) {
+        return message;
+    }
+
+    const details = data.details;
+    if (Array.isArray(details) && details.length > 0) {
+        const detailMessages = details
+            .map((detail) => {
+                if (!isObject(detail)) {
+                    return undefined;
+                }
+
+                const description = detail.description;
+                if (typeof description === 'string' && description.length > 0) {
+                    return description;
+                }
+
+                const detailMessage = detail.message;
+                return typeof detailMessage === 'string' ? detailMessage : undefined;
+            })
+            .filter((detail): detail is string => Boolean(detail));
+
+        if (detailMessages.length > 0) {
+            return detailMessages.join(', ');
+        }
+    }
+
+    return undefined;
+}
+
 export class PayPalInterface {
-    _token: { expires_in: number; created: number; access_token: string } | null = null;
+    _token: PayPalToken | null = null;
+
+    private async parseResponse(response: Response): Promise<unknown> {
+        if (response.status === 204) {
+            return null;
+        }
+
+        const contentType = response.headers.get('content-type') ?? '';
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+
+        const text = await response.text();
+        return text.length > 0 ? text : null;
+    }
+
+    private async request<T>(url: string, init: RequestInit): Promise<T> {
+        const response = await fetch(url, init);
+        const data = await this.parseResponse(response);
+
+        if (!response.ok) {
+            throw new PayPalRequestError(
+                getErrorDetailMessage(data) || `PayPal API request failed with status ${response.status}`,
+                { status: response.status, data }
+            );
+        }
+
+        return data as T;
+    }
 
     async getToken() {
         if (!this._token ||
@@ -97,11 +179,17 @@ export class PayPalInterface {
             console.log('PayPal Username:', Eauth.username ? `${Eauth.username.substring(0, 10)}...` : 'Missing');
 
             try {
-                const resp = await axios.post(url,
-                    qs.stringify({ 'grant_type': 'client_credentials' }),
-                    { headers, auth: Eauth }
-                );
-                this._token = { ...resp.data, created: new Date().getTime() };
+                const basicAuth = Buffer.from(`${Eauth.username}:${Eauth.password}`).toString('base64');
+                const resp = await this.request<Omit<PayPalToken, 'created'>>(url, {
+                    method: 'POST',
+                    headers: {
+                        ...headers,
+                        Authorization: `Basic ${basicAuth}`,
+                    },
+                    body: new URLSearchParams({ grant_type: 'client_credentials' }),
+                    cache: 'no-store',
+                });
+                this._token = { ...resp, created: new Date().getTime() };
 
                 if (this._token) {
                     this._token.created = new Date().getTime();
@@ -123,12 +211,16 @@ export class PayPalInterface {
         };
 
         try {
-            const response = await axios.post(url, orderRequest, { headers });
-            return response.data;
+            return await this.request(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(orderRequest),
+                cache: 'no-store',
+            });
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                console.error("PayPal create order error:", error.response?.data);
-                throw new Error(`Failed to create PayPal order: ${error.response?.data?.message || error.message}`);
+            if (error instanceof PayPalRequestError) {
+                console.error("PayPal create order error:", error.data);
+                throw new Error(`Failed to create PayPal order: ${getErrorDetailMessage(error.data) || error.message}`);
             }
             throw error;
         }
@@ -143,12 +235,16 @@ export class PayPalInterface {
         };
 
         try {
-            const response = await axios.post(url, {}, { headers });
-            return response.data;
+            return await this.request(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({}),
+                cache: 'no-store',
+            });
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                console.error("PayPal capture order error:", error.response?.data);
-                throw new Error(`Failed to capture PayPal order: ${error.response?.data?.message || error.message}`);
+            if (error instanceof PayPalRequestError) {
+                console.error("PayPal capture order error:", error.data);
+                throw new Error(`Failed to capture PayPal order: ${getErrorDetailMessage(error.data) || error.message}`);
             }
             throw error;
         }
@@ -162,12 +258,15 @@ export class PayPalInterface {
         };
 
         try {
-            const response = await axios.get(url, { headers });
-            return response.data;
+            return await this.request(url, {
+                method: 'GET',
+                headers,
+                cache: 'no-store',
+            });
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                console.error("PayPal get order error:", error.response?.data);
-                throw new Error(`Failed to get PayPal order: ${error.response?.data?.message || error.message}`);
+            if (error instanceof PayPalRequestError) {
+                console.error("PayPal get order error:", error.data);
+                throw new Error(`Failed to get PayPal order: ${getErrorDetailMessage(error.data) || error.message}`);
             }
             throw error;
         }
@@ -288,13 +387,19 @@ export class PayPalInterface {
                 home_url: data.home_url
             });
 
-            const response = await axios.post(url, data, { headers });
-            console.log("PayPal product created successfully:", response.data);
-            return response.data;
+            const response = await this.request(url, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(data),
+                cache: 'no-store',
+            });
+            console.log("PayPal product created successfully:", response);
+            return response;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const status = error.response?.status;
-                const errorData = error.response?.data;
+            if (error instanceof PayPalRequestError) {
+                const status = error.status;
+                const errorData = error.data;
+                const errorPayload = isObject(errorData) ? errorData : undefined;
 
                 console.error("Error creating PayPal product:", {
                     status: status,
@@ -305,12 +410,13 @@ export class PayPalInterface {
                 let errorMessage = 'Failed to create PayPal product';
 
                 if (status === 400) {
-                    if (errorData?.details) {
-                        const details = Array.isArray(errorData.details) ? errorData.details : [errorData.details];
+                    const detailsValue = errorPayload?.details;
+                    if (detailsValue) {
+                        const details = Array.isArray(detailsValue) ? detailsValue : [detailsValue];
                         const detailMessages = details.map((detail: { description?: string; message?: string }) => detail.description || detail.message || detail).join(', ');
                         errorMessage = `Bad request: ${detailMessages}`;
-                    } else if (errorData?.message) {
-                        errorMessage = `Bad request: ${errorData.message}`;
+                    } else if (typeof errorPayload?.message === 'string' && errorPayload.message.length > 0) {
+                        errorMessage = `Bad request: ${errorPayload.message}`;
                     } else {
                         errorMessage = 'Bad request: The data sent to PayPal is invalid';
                     }
@@ -321,7 +427,7 @@ export class PayPalInterface {
                 } else if (status === 422) {
                     errorMessage = 'Unprocessable entity: PayPal cannot process this product data';
                 } else {
-                    errorMessage = errorData?.message || error.message || 'Unknown PayPal API error';
+                    errorMessage = getErrorDetailMessage(errorData) || error.message || 'Unknown PayPal API error';
                 }
 
                 throw new Error(errorMessage);
@@ -349,8 +455,11 @@ export class PayPalInterface {
                 };
 
                 console.log(`Fetching PayPal products page ${page}...`);
-                const resp = await axios.get(url, { headers });
-                const data = resp.data;
+                const data = await this.request<{ products?: PayPalProduct[]; total_items?: number }>(url, {
+                    method: 'GET',
+                    headers,
+                    cache: 'no-store',
+                });
 
                 if (data.products && data.products.length > 0) {
                     allProducts.push(...data.products);
@@ -404,16 +513,18 @@ export class PayPalInterface {
             'Authorization': `Bearer ${token?.access_token}`
         }
         try {
-            const resp = await axios.get(url, { headers });
-            return resp.data;
+            return await this.request<PayPalProduct>(url, {
+                method: 'GET',
+                headers,
+                cache: 'no-store',
+            });
         } catch (e) {
-            if (axios.isAxiosError(e)) {
+            if (e instanceof PayPalRequestError) {
                 console.error(`PayPal getProduct error for ID ${id}:`, {
-                    status: e.response?.status,
-                    statusText: e.response?.statusText,
-                    data: e.response?.data
+                    status: e.status,
+                    data: e.data
                 });
-                throw new Error(`Failed to get PayPal product ${id}: ${e.response?.data?.message || e.message}`);
+                throw e;
             }
             console.error("Unexpected error in getProduct:", e);
             throw new Error(`Unexpected error getting PayPal product ${id}: ${e}`);
@@ -428,7 +539,7 @@ export class PayPalInterface {
             currentProduct = await this.getProduct(productId);
             console.log(`Product ${productId} exists, proceeding with name update.`);
         } catch (getError) {
-            if (axios.isAxiosError(getError) && getError.response?.status === 404) {
+            if (getError instanceof PayPalRequestError && getError.status === 404) {
                 console.log(`Product ${productId} not found - cannot update name`);
                 throw new Error(`PayPal product not found (404): Product ${productId} does not exist in PayPal catalog`);
             }
@@ -454,11 +565,11 @@ export class PayPalInterface {
             console.log('Product marked as no inventory:', productId);
             return updateResult;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
-                const statusCode = error.response?.status;
-                const errorMessage = error.response?.data?.message || error.message;
+            if (error instanceof PayPalRequestError) {
+                const statusCode = error.status;
+                const errorMessage = getErrorDetailMessage(error.data) || error.message;
 
-                console.error(`Error updating product (${statusCode}):`, error.response?.data || errorMessage);
+                console.error(`Error updating product (${statusCode}):`, error.data || errorMessage);
 
                 // Provide more specific error messages based on status code
                 if (statusCode === 404) {
@@ -556,21 +667,24 @@ export class PayPalInterface {
         console.log('PayPal patch operations:', JSON.stringify(patchOperations, null, 2));
 
         try {
-            const response = await axios.patch(url, patchOperations, { headers });
+            const response = await this.request(url, {
+                method: 'PATCH',
+                headers,
+                body: JSON.stringify(patchOperations),
+                cache: 'no-store',
+            });
             console.log('Product updated successfully:', productId);
-            return response.data;
+            return response;
         } catch (error) {
-            if (axios.isAxiosError(error)) {
+            if (error instanceof PayPalRequestError) {
                 console.error("Error updating product:", {
-                    status: error.response?.status,
-                    statusText: error.response?.statusText,
-                    data: error.response?.data,
+                    status: error.status,
+                    data: error.data,
                     url: url,
                     patchOps: patchOperations
                 });
 
-                const errorMessage = error.response?.data?.message ||
-                    error.response?.data?.details?.[0]?.description ||
+                const errorMessage = getErrorDetailMessage(error.data) ||
                     error.message;
 
                 throw new Error(`Failed to update product: ${errorMessage}`);

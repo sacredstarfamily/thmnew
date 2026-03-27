@@ -4,14 +4,23 @@ import { AuthService } from '@/lib/auth'
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieToken = request.cookies.get('auth-token')?.value
+
+    let token: string | undefined
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7)
+    } else if (cookieToken) {
+      token = cookieToken
+    }
+
+    if (!token) {
       return NextResponse.json(
         { error: 'Authorization token required' },
         { status: 401 }
       )
     }
 
-    const token = authHeader.substring(7) // Remove 'Bearer ' prefix
     const userPayload = AuthService.verifyToken(token)
 
     if (!userPayload) {

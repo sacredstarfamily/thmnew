@@ -48,37 +48,14 @@ export function AuthWrapper({
       try {
         setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
-        // Get token from cookie
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('auth-token='))
-          ?.split('=')[1]
-
-        if (!token) {
-          setAuthState({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: null
-          })
-
-          if (redirectTo) {
-            router.push(`${redirectTo}?redirect=${pathname}`)
-          }
-          return
-        }
-
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        const response = await fetch('/api/auth/me')
 
         if (response.ok) {
-          const userData = await response.json()
+          const rawData = await response.json()
+          const userData = rawData?.user ?? rawData
 
           // Check role if required
-          if (requiredRole && userData.role !== requiredRole) {
+          if (requiredRole && userData?.role !== requiredRole) {
             setAuthState({
               isAuthenticated: false,
               user: null,
@@ -188,29 +165,11 @@ export function useAuth() {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
-      const token = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('auth-token='))
-        ?.split('=')[1]
-
-      if (!token) {
-        setAuthState({
-          isAuthenticated: false,
-          user: null,
-          isLoading: false,
-          error: null
-        })
-        return
-      }
-
-      const response = await fetch('/api/auth/me', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-
+      const response = await fetch('/api/auth/me')
       if (response.ok) {
-        const userData = await response.json()
+        const rawData = await response.json()
+        const userData = rawData?.user ?? rawData
+
         setAuthState({
           isAuthenticated: true,
           user: userData,
@@ -235,8 +194,15 @@ export function useAuth() {
     }
   }
 
-  const logout = () => {
-    document.cookie = 'auth-token=; path=/; max-age=0'
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+    } catch {
+      console.warn('Logout API call failed')
+    }
+
     setAuthState({
       isAuthenticated: false,
       user: null,
@@ -250,29 +216,11 @@ export function useAuth() {
       try {
         setAuthState(prev => ({ ...prev, isLoading: true, error: null }))
 
-        const token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('auth-token='))
-          ?.split('=')[1]
-
-        if (!token) {
-          setAuthState({
-            isAuthenticated: false,
-            user: null,
-            isLoading: false,
-            error: null
-          })
-          return
-        }
-
-        const response = await fetch('/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+        const response = await fetch('/api/auth/me')
 
         if (response.ok) {
-          const userData = await response.json()
+          const rawData = await response.json()
+          const userData = rawData?.user ?? rawData
           setAuthState({
             isAuthenticated: true,
             user: userData,
