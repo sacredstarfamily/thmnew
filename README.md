@@ -23,28 +23,34 @@ Open `http://localhost:3000`.
 Create a `.env` at project root with:
 
 ```env
-# PostgreSQL
+# Core app
+NODE_ENV=development
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+
+# Database (Prisma)
 DATABASE_URL="postgresql://<user>:<pass>@localhost:5432/<db>?schema=public"
 DATABASE_POOL_MAX=20
 DATABASE_POOL_MIN=2
 
-# JWT auth
-JWT_SECRET="<strong-secret>"
+# Auth
+JWT_SECRET="replace-with-a-long-random-secret"
 JWT_EXPIRES_IN="7d"
 
-# App URLs
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NEXT_PUBLIC_PROJECT_ID="<wallet-project-id>"
+# Wallet/AppKit (used by current code paths)
+NEXT_PUBLIC_PROJECT_ID="<reown-project-id>"
+# Legacy/alternate path still present in lib/appkit.ts
+NEXT_PUBLIC_REOWN_PROJECT_ID="<reown-project-id>"
 
-# PayPal (sandbox/live)
-NEXT_PUBLIC_SANDBOX_PAYPAL_ID="<paypal-sandbox-client-id>"
-NEXT_PUBLIC_SANDBOX_PAYPAL_SECRET="<paypal-sandbox-client-secret>"
-NEXT_PUBLIC_LIVE_PAYPAL_ID="<paypal-live-client-id>"
-PAYPAL_CLIENT_SECRET="<paypal-live-client-secret>"
-
-# Optional
-NODE_ENV=development
+# PayPal
+NEXT_PUBLIC_SANDBOX_PAYPAL_ID="<sandbox-client-id>"
+NEXT_PUBLIC_SANDBOX_PAYPAL_SECRET="<sandbox-client-secret>"
+NEXT_PUBLIC_LIVE_PAYPAL_ID="<live-client-id>"
+PAYPAL_CLIENT_SECRET="<live-client-secret>"
 ```
+
+Notes:
+- `POST /api/auth/login` sets an `HttpOnly` `auth-token` cookie server-side; no client-side token storage is required.
+- Keep `.env` local only and configure production secrets in your hosting provider.
 
 ## Database setup
 
@@ -71,18 +77,25 @@ npm run dev
 
 ## Runbook
 
-1. Ensure `.env` has correct values and secrets are rotated monthly.
+1. Ensure `.env` is present with all required values above.
 2. Ensure PostgreSQL is reachable via `DATABASE_URL`.
-3. Rebuild prisma client after schema changes: `npx prisma generate`.
-4. Migrate DB (dev): `npx prisma migrate dev` and confirm on `npx prisma studio`.
-5. Start app: `npm run dev`; verify homepage and auth flows.
-6. Signup with new user, verify email (or check console URL in dev), then login.
-7. Check protected routes:
+3. Install and build Prisma artifacts: `npm install && npx prisma generate`.
+4. Apply migrations (dev): `npx prisma migrate dev` and inspect data with `npx prisma studio`.
+5. Start app: `npm run dev`.
+6. Run auth flow:
+   - Sign up a new user via `/signup`.
+   - Verify email via `/verify-email` link/token.
+   - Attempt login before verification should return `403` with verification message.
+   - Login after verification should succeed and set `auth-token` cookie.
+7. Confirm session behavior:
+   - `auth-token` exists as `HttpOnly` cookie in browser devtools.
+   - `/api/auth/me` returns `{ user: ... }` for authenticated sessions.
+8. Check protected routes:
    - `/dashboard`, `/profile`, `/settings`
    - `/admin` (admin role only)
-8. For PayPal flows, ensure sandbox/live keys are set and `NEXT_PUBLIC_APP_URL` points to deployed host.
-9. For logout, confirm `/api/auth/logout` clears cookie and invalidates session.
-10. For emergency rollback, restore last working commit and re-run `npm install` + `npm run dev`.
+9. For PayPal flows, ensure sandbox/live keys are set and `NEXT_PUBLIC_APP_URL` points to deployed host.
+10. For logout, confirm `/api/auth/logout` clears cookie and invalidates session.
+11. For rollback, restore last working commit, run `npm install`, and re-run migrations as needed.
 
 ## Testing and debug
 

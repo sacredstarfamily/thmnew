@@ -7,6 +7,34 @@ interface User {
   id: string
   email: string
   name?: string
+  role?: string
+}
+
+interface AuthMeResponse {
+  user: User
+}
+
+function parseAuthMeResponse(payload: unknown): User | null {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const maybeResponse = payload as Partial<AuthMeResponse>
+  if (!maybeResponse.user || typeof maybeResponse.user !== 'object') {
+    return null
+  }
+
+  const maybeUser = maybeResponse.user as Partial<User>
+  if (typeof maybeUser.id !== 'string' || typeof maybeUser.email !== 'string') {
+    return null
+  }
+
+  return {
+    id: maybeUser.id,
+    email: maybeUser.email,
+    name: typeof maybeUser.name === 'string' ? maybeUser.name : undefined,
+    role: typeof maybeUser.role === 'string' ? maybeUser.role : undefined,
+  }
 }
 
 interface AuthWrapperProps {
@@ -52,7 +80,22 @@ export function AuthWrapper({
 
         if (response.ok) {
           const rawData = await response.json()
-          const userData = rawData?.user ?? rawData
+          const userData = parseAuthMeResponse(rawData)
+
+          if (!userData) {
+            setAuthState({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: 'Invalid auth response shape'
+            })
+
+            if (redirectTo) {
+              router.push(`${redirectTo}?redirect=${pathname}`)
+            }
+            onAuthError?.('Invalid auth response shape')
+            return
+          }
 
           // Check role if required
           if (requiredRole && userData?.role !== requiredRole) {
@@ -168,7 +211,17 @@ export function useAuth() {
       const response = await fetch('/api/auth/me')
       if (response.ok) {
         const rawData = await response.json()
-        const userData = rawData?.user ?? rawData
+        const userData = parseAuthMeResponse(rawData)
+
+        if (!userData) {
+          setAuthState({
+            isAuthenticated: false,
+            user: null,
+            isLoading: false,
+            error: 'Invalid auth response shape'
+          })
+          return
+        }
 
         setAuthState({
           isAuthenticated: true,
@@ -220,7 +273,18 @@ export function useAuth() {
 
         if (response.ok) {
           const rawData = await response.json()
-          const userData = rawData?.user ?? rawData
+          const userData = parseAuthMeResponse(rawData)
+
+          if (!userData) {
+            setAuthState({
+              isAuthenticated: false,
+              user: null,
+              isLoading: false,
+              error: 'Invalid auth response shape'
+            })
+            return
+          }
+
           setAuthState({
             isAuthenticated: true,
             user: userData,
