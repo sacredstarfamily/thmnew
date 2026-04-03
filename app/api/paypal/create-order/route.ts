@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const paypal = new PayPalInterface()
-    const order = await paypal.createOrder(orderRequest)
+    const order = await paypal.createOrder(orderRequest) as { id: string }
 
     return NextResponse.json({ id: order.id })
   } catch (error) {
